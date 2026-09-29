@@ -1,0 +1,92 @@
+# Stack tipo de una aplicación dentro de su contenedor LXC.
+#
+# Ideas:
+#  - La base de datos y el almacenamiento de objetos SOLO están en `interna` (sin salida a internet).
+#  - La aplicación está además en `salida`, porque necesita SMTP y webhooks.
+#  - Solo la aplicación publica un puerto, y solo en la interfaz de la red de los contenedores,
+#    para que llegue el proxy inverso. Nada escucha en la IP pública.
+#  - Secretos como ficheros montados, no como variables en claro.
+#  - Healthchecks en todo: `depends_on` espera a que las dependencias estén sanas.
+#  - Versiones fijadas.
+
+name: app-ejemplo
+
+services:
+  app:
+    image: registry.example.com/app-ejemplo:1.4.2
+    restart: unless-stopped
+    ports:
+      - "<IP_RED_INTERNA_LXC>:3000:3000"   # solo visible para el proxy inverso
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: app
+      DATABASE_USER: app
+      DATABASE_PASSWORD_FILE: /run/secrets/db_password
+      S3_ENDPOINT: http://objetos:9000
+      S3_ACCESS_KEY_FILE: /run/secrets/s3_access_key
+      S3_SECRET_KEY_FILE: /run/secrets/s3_secret_key
+      SMTP_HOST: smtp.example.com
+    secrets: [db_password, s3_access_key, s3_secret_key]
+    depends_on:
+      db:
+        condition: service_healthy
+      objetos:
+        condition: service_healthy
+    networks: [interna, salida]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    volumes:
+      - db-datos:/var/lib/postgresql/data
+    networks: [interna]              # sin ruta a internet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  objetos:
+    image: minio/minio:<VERSION_FIJADA>
+    command: server /data
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/s3_access_key
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/s3_secret_key
+    secrets: [s3_access_key, s3_secret_key]
+    volumes:
+      - objetos-datos:/data
+    networks: [interna]              # sin puertos publicados ni dominio
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  interna:
+    internal: true                   # la clave: esta red no tiene salida
+  salida: {}
+
+volumes:
+  db-datos:
+  objetos-datos:
+
+secrets:
+  db_password:
+    file: ./secretos/db_password     # generados en el servidor, permisos 600, fuera de git
+  s3_access_key:
+    file: ./secretos/s3_access_key
+  s3_secret_key:
+    file: ./secretos/s3_secret_key
