@@ -1,5 +1,12 @@
+<p align="center">
+  <img src="assets/banner.png" alt="Infraestructura autohospedada" width="100%">
+</p>
+
 # Infraestructura autohospedada para aplicaciones internas
 
+![en producción](https://img.shields.io/badge/estado-en%20producci%C3%B3n-2EA043?style=flat-square) ![caso de estudio](https://img.shields.io/badge/caso%20de%20estudio-7C6CF0?style=flat-square) ![Proxmox](https://img.shields.io/badge/Proxmox-E57000?style=flat-square&logo=proxmox&logoColor=white) ![LXC](https://img.shields.io/badge/LXC-333333?style=flat-square&logo=linuxcontainers&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) ![ZFS](https://img.shields.io/badge/ZFS-2A5DAB?style=flat-square) ![Nginx Proxy Manager](https://img.shields.io/badge/Nginx%20Proxy%20Manager-F15833?style=flat-square&logo=nginxproxymanager&logoColor=white) ![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?style=flat-square&logo=claude&logoColor=white)
+
+> [!NOTE]
 > **Caso de estudio.** Plataforma que diseñé y administro para las aplicaciones internas de una empresa. Aquí están el problema, la arquitectura, las decisiones y [ejemplos genéricos](snippets/). No hay direcciones, nombres de máquinas, versiones exactas ni configuración de red o de acceso: se explica la idea, no la receta.
 
 ## El problema
